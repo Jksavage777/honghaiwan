@@ -46,6 +46,19 @@
       color: var(--accent);
       white-space: nowrap;
     }
+    .btn-export {
+      background: rgba(56,168,245,.15);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 5px 16px;
+      font-size: 12px;
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s;
+      font-family: inherit;
+    }
+    .btn-export:hover { background: rgba(56,168,245,.35); }
     /* ── BODY ── */
     .body {
       flex: 1;
@@ -152,7 +165,10 @@
       <h1>煤与生物质直接耦合发电系统集成及工业验证</h1>
       <p>广东红海湾发电有限公司 &amp; 西安热工研究院有限公司 &nbsp;|&nbsp; 国家重点研发计划"可再生能源技术"</p>
     </div>
-    <div class="badge">TPRI &nbsp;·&nbsp; 动态流程图</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-export" @click="exportPng">📥 导出 PNG</button>
+      <div class="badge">TPRI &nbsp;·&nbsp; 动态流程图</div>
+    </div>
   </div>
 
   <div class="body">
@@ -703,6 +719,13 @@ createApp({
       tip.nodeId = null;
     }
 
+    function exportPng(){
+      const link = document.createElement('a');
+      link.download = '煤与生物质耦合发电流程图.png';
+      link.href = cvRef.value.toDataURL('image/png');
+      link.click();
+    }
+
     // ── resize ─────────────────────────────────────────────────────────────
     function resize(){
       const wrap = wrapRef.value;
@@ -726,7 +749,7 @@ createApp({
       if(raf) cancelAnimationFrame(raf);
     });
 
-    return { cvRef, wrapRef, tip, sel, legend, typeLabel, onMove, onClick, onLeave };
+    return { cvRef, wrapRef, tip, sel, legend, typeLabel, onMove, onClick, onLeave, exportPng };
   }
 }).mount('#app');
 
