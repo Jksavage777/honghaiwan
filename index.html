@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>煤与生物质直接耦合发电系统集成 - 动态流程图</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --bg: #060e1e;
+      --panel: #0b1a33;
+      --border: #1b3d70;
+      --accent: #38a8f5;
+      --text1: #d8ecff;
+      --text2: #6a9fd0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text1);
+      font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* ── HEADER ── */
+    .hdr {
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #08162b 0%, #0d2448 100%);
+      border-bottom: 2px solid var(--border);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 3px 18px rgba(0,40,100,.6);
+    }
+    .hdr h1 { font-size: 17px; font-weight: 700; color: #4fc3f7; letter-spacing: .5px; }
+    .hdr p  { font-size: 11px; color: var(--text2); margin-top: 3px; }
+    .badge  {
+      background: rgba(56,168,245,.12);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 4px 14px;
+      font-size: 11px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    /* ── BODY ── */
+    .body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+    /* ── CANVAS AREA ── */
+    .cv-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    canvas {
+      position: absolute;
+      top: 0; left: 0;
+      cursor: pointer;
+    }
+    /* ── LEGEND ── */
+    .legend {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(6,14,30,.9);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      pointer-events: none;
+    }
+    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+    .leg-dot  { width: 14px; height: 10px; border-radius: 2px; }
+    /* ── TOOLTIP ── */
+    .tip {
+      position: absolute;
+      background: rgba(5,15,35,.95);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 6px 11px;
+      font-size: 12px;
+      color: #a8d4f5;
+      pointer-events: none;
+      z-index: 20;
+      max-width: 200px;
+      box-shadow: 0 4px 16px rgba(30,100,220,.35);
+      white-space: nowrap;
+    }
+    /* ── DETAIL PANEL ── */
+    .detail {
+      width: 290px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      padding: 20px 18px;
+      overflow-y: auto;
+      transition: width .25s, padding .25s;
+    }
+    .detail.closed { width: 0; padding: 0; overflow: hidden; }
+    .d-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .d-title { font-size: 15px; font-weight: 700; color: #4fc3f7; line-height: 1.4; }
+    .d-close {
+      background: none; border: none; color: var(--text2);
+      font-size: 20px; cursor: pointer; line-height: 1; flex-shrink: 0;
+    }
+    .d-close:hover { color: #fff; }
+    .d-tag {
+      display: inline-block;
+      background: rgba(56,168,245,.1);
+      border: 1px solid rgba(56,168,245,.3);
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .d-desc { font-size: 12px; color: var(--text2); line-height: 1.75; }
+    .d-params-title {
+      font-size: 12px; font-weight: 700; color: #4fc3f7;
+      margin: 14px 0 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+    .d-param {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .d-param .pk { color: var(--text2); }
+    .d-param .pv { color: var(--text1); font-weight: 600; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div>
+      <h1>煤与生物质直接耦合发电系统集成及工业验证</h1>
+      <p>广东红海湾发电有限公司 &amp; 西安热工研究院有限公司 &nbsp;|&nbsp; 国家重点研发计划"可再生能源技术"</p>
+    </div>
+    <div class="badge">TPRI &nbsp;·&nbsp; 动态流程图</div>
+  </div>
+
+  <div class="body">
+    <div class="cv-wrap" ref="wrapRef">
+      <canvas ref="cvRef"
+        @mousemove="onMove"
+        @click="onClick"
+        @mouseleave="onLeave">
+      </canvas>
+
+      <!-- Tooltip -->
+      <div v-if="tip.show" class="tip"
+        :style="{ left: tip.x+'px', top: tip.y+'px' }">
+        {{ tip.label }}
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div v-for="l in legend" :key="l.label" class="leg-item">
+          <div class="leg-dot" :style="{ background: l.color }"></div>
+          <span>{{ l.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail" :class="{ closed: !sel }">
+      <template v-if="sel">
+        <div class="d-head">
+          <div class="d-title">{{ sel.label.replace(/\n/g,' ') }}</div>
+          <button class="d-close" @click="sel=null">×</button>
+        </div>
+        <div class="d-tag">{{ typeLabel(sel.type) }}</div>
+        <div class="d-desc">{{ sel.desc }}</div>
+        <template v-if="sel.params && sel.params.length">
+          <div class="d-params-title">关键参数</div>
+          <div v-for="p in sel.params" :key="p.k" class="d-param">
+            <span class="pk">{{ p.k }}</span>
+            <span class="pv">{{ p.v }}</span>
+          </div>
+        </template>
+      </template>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted, onUnmounted } = Vue;
+
+// ── Visual design constants ────────────────────────────────────────────────
+const ARROW_SIZE         = 7;    // arrowhead size in logical pixels
+const GRID_STEP          = 40;   // background grid spacing in logical pixels
+const PARTICLE_SPACING   = 120;  // one particle per this many logical pixels of edge length
+const BASE_PARTICLE_SPEED = 0.0018; // progress units per frame at 60 fps (0→1 per edge)
+const SPEED_VARIANCE     = 0.001;   // random extra speed added per particle
+const MIN_PARTICLE_RADIUS = 2.8;    // smallest particle radius (logical px)
+const RADIUS_VARIANCE    = 1.2;     // random extra radius added per particle
+
+// ── Colours per node type ──────────────────────────────────────────────────
+const TYPE_COLOR = {
+  fuel_coal : '#1565c0',
+  fuel_bio  : '#2e7d32',
+  process   : '#37474f',
+  boiler    : '#b71c1c',
+  monitor   : '#6a1b9a',
+  control   : '#4a148c',
+  steam     : '#00695c',
+  power     : '#e65100',
+  fluegas   : '#37474f',
+  env       : '#1a4a2e',
+  output    : '#1b1b2f',
+};
+const TYPE_NAMES = {
+  fuel_coal:'燃煤系统', fuel_bio:'生物质系统', process:'制粉系统',
+  boiler:'锅炉系统',   monitor:'监测系统',     control:'控制系统',
+  steam:'汽水系统',    power:'发电系统',        fluegas:'烟气系统',
+  env:'环保系统',      output:'排放口',
+};
+
+// ── Logical canvas dimensions ──────────────────────────────────────────────
+const LW = 1300, LH = 760;
+
+// ── Node definitions ───────────────────────────────────────────────────────
+// x,y = top-left corner; w,h = width/height (all in logical px)
+const NODES = [
+  // ── Coal fuel path ──
+  { id:'coal_yard', label:'煤场来煤',    x:45,  y:48,  w:120, h:50, type:'fuel_coal',
+    desc:'矿山或港口运来的原煤，经初步筛选和破碎后储存于厂区煤场。煤质为烟煤，低位发热量约 23-25 MJ/kg，灰分约 12-18 %，硫分约 0.5-1.2 %。作为机组主燃料，年用量约 280 万吨。',
+    params:[{k:'低位发热量',v:'23-25 MJ/kg'},{k:'灰分',v:'12-18 %'},{k:'年用量',v:'约280万吨'}]},
+
+  { id:'coal_conv', label:'输煤皮带',   x:45,  y:142, w:120, h:50, type:'fuel_coal',
+    desc:'将煤场储煤经皮带输送机送至原煤仓，配置磁力除铁器、电子皮带秤和自动采样器，全程封闭防尘，确保煤质监测连续准确。',
+    params:[{k:'输送能力',v:'1200 t/h'},{k:'皮带速度',v:'3.15 m/s'},{k:'带宽',v:'1400 mm'}]},
+
+  { id:'coal_bin',  label:'煤仓',       x:45,  y:242, w:120, h:55, type:'fuel_coal',
+    desc:'储存经输煤系统送来的原煤，钢结构筒仓设计，料位计实时监测，保证磨煤机 12-24 h 连续运行所需用量。出口配电子给煤机，精准计量。',
+    params:[{k:'单仓容量',v:'600 t'},{k:'数量',v:'6 个'},{k:'给煤方式',v:'电子给煤机'}]},
+
+  // ── Biomass fuel path ──
+  { id:'bio_in',   label:'生物质颗粒料', x:280, y:48,  w:145, h:50, type:'fuel_bio',
+    desc:'农业废弃物（秸秆、稻壳、木屑等）经破碎、干燥、压制成型的颗粒生物质燃料。颗粒直径 6-8 mm，含水率 ≤ 12 %，低位发热量约 14-16 MJ/kg，是机组掺烧的可再生能源原料。',
+    params:[{k:'颗粒规格',v:'φ6-8×10-30 mm'},{k:'含水率',v:'≤ 12 %'},{k:'低位发热量',v:'14-16 MJ/kg'}]},
+
+  { id:'bio_proc', label:'生物质预处理', x:280, y:142, w:145, h:50, type:'fuel_bio',
+    desc:'对生物质颗粒进行二次破碎、计量和气力输送，配备惰化（CO₂/N₂）及防爆设施。精确控制送入量以维持掺烧比例，并避免运输过程中的自燃和爆炸风险。',
+    params:[{k:'处理能力',v:'25 t/h'},{k:'输送方式',v:'气力输送'},{k:'防护措施',v:'惰化+防爆'}]},
+
+  { id:'bio_bin',  label:'生物质仓',    x:280, y:242, w:145, h:55, type:'fuel_bio',
+    desc:'储存预处理后的生物质颗粒，设有防潮、防火、CO₂ 惰化保护。料位计连续监测仓位，给料机精确控制向磨煤机的给入量，保证掺混比例实时可调。',
+    params:[{k:'单仓容量',v:'80 t'},{k:'数量',v:'6 个'},{k:'安全措施',v:'CO₂惰化保护'}]},
+
+  // ── Mill ──
+  { id:'mill', label:'磨煤机\n(掺混制粉)', x:118, y:362, w:175, h:65, type:'process',
+    desc:'中速磨煤机将原煤磨制成细粉；生物质从磨煤机入口按比例（≤15 % 质量）掺入，实现均匀混合和共同制粉。出口煤粉细度 R₉₀ ≤ 22 %，满足四角切圆燃烧器的要求。',
+    params:[{k:'型号',v:'MPS212HP-II'},{k:'出力',v:'75 t/h'},{k:'生物质掺混比',v:'≤15 % (质量)'},{k:'台数',v:'6 台'}]},
+
+  // ── Boiler (large box) ──
+  { id:'boiler', label:'锅炉\n炉膛', x:408, y:300, w:235, h:258, type:'boiler',
+    desc:'660 MW 超超临界四角切圆燃烧锅炉。掺烧生物质时通过调整配风比例、燃尽风量和燃烧器摆角优化燃烧工况，保证燃烧稳定性和锅炉效率，同时降低 NOₓ 排放。',
+    params:[{k:'容量',v:'660 MW'},{k:'主蒸汽',v:'26.15 MPa / 605 ℃'},{k:'再热汽温',v:'623 ℃'},{k:'锅炉效率',v:'≥94.2 %'},{k:'掺烧比例',v:'≤10 % (热量)'}]},
+
+  // ── Monitoring ──
+  { id:'bio_id',    label:'生物质识别',  x:678, y:305, w:133, h:50, type:'monitor',
+    desc:'采用近红外光谱（NIR）结合机器视觉，在输煤皮带上实时识别生物质种类和含量（±1.5 %），为给料控制系统提供反馈，是本项目的关键创新技术之一，实现按需精准掺烧。',
+    params:[{k:'原理',v:'NIR+机器视觉'},{k:'识别精度',v:'±1.5 %'},{k:'响应时间',v:'< 5 s'}]},
+
+  { id:'alkali',   label:'碱金属监测',  x:678, y:378, w:133, h:50, type:'monitor',
+    desc:'利用激光诱导击穿光谱（LIBS）技术对炉膛烟气中 K、Na 等碱金属元素进行在线监测，实时评估生物质掺烧引起的结焦、腐蚀风险，为运行调整提供预警。',
+    params:[{k:'技术',v:'LIBS 光谱法'},{k:'检测元素',v:'K、Na、Cl'},{k:'量程',v:'0-100 mg/Nm³'}]},
+
+  { id:'heat_flux', label:'热流计',      x:678, y:451, w:133, h:50, type:'monitor',
+    desc:'水冷壁式热流计均布于炉膛四面水冷壁，实时测量各区域热流密度分布，评估掺烧工况下炉膛热负荷变化。数据用于吹灰决策和燃烧优化，各测点设有独立子页面展示详细数据。',
+    params:[{k:'测点数量',v:'40 个'},{k:'量程',v:'0-600 kW/m²'},{k:'精度',v:'±2 %'},{k:'采样频率',v:'1 Hz'}]},
+
+  { id:'soot', label:'吹灰优化',         x:678, y:524, w:133, h:50, type:'control',
+    desc:'基于热流计数据、炉膛温度和烟气成分，通过智能优化算法动态规划吹灰序列和频次，在有效清除水冷壁积灰的同时降低吹灰蒸汽消耗，提升锅炉热效率约 0.3-0.5 %。',
+    params:[{k:'控制依据',v:'热流计+温度+成分'},{k:'优化目标',v:'效率最优'},{k:'节汽量',v:'约 15 %'}]},
+
+  // ── Steam turbine system ──
+  { id:'superheater', label:'过热/再热器', x:848, y:218, w:155, h:52, type:'steam',
+    desc:'位于锅炉对流烟道，包含高温过热器、低温过热器和再热器，将饱和蒸汽加热至超超临界参数。掺烧生物质时受热面需防范碱金属腐蚀和积灰，需定期检查清洗。',
+    params:[{k:'出口蒸汽温度',v:'605 ℃ / 623 ℃'},{k:'出口蒸汽压力',v:'26.15 MPa'},{k:'材质',v:'T91/Super304H'}]},
+
+  { id:'turbine',    label:'汽轮机',      x:1058, y:218, w:140, h:52, type:'steam',
+    desc:'超超临界汽轮机，高、中、低压三缸四排汽设计，将高温高压蒸汽热能高效转换为机械能。配置汽封优化和通流改造，额定工况热耗率约 7300 kJ/kWh。',
+    params:[{k:'额定功率',v:'660 MW'},{k:'进汽参数',v:'26.15 MPa/605℃'},{k:'热耗率',v:'7300 kJ/kWh'}]},
+
+  { id:'generator',  label:'发电机',      x:1058, y:105, w:140, h:52, type:'power',
+    desc:'三相同步发电机将汽轮机的机械能转换为 50 Hz 交流电，通过主变升压后并入 500 kV 电网。额定功率因数 0.85，采用水-氢-氢冷却方式，配备在线监测系统。',
+    params:[{k:'额定容量',v:'660 MW'},{k:'频率',v:'50 Hz'},{k:'冷却方式',v:'水氢氢'}]},
+
+  { id:'condenser',  label:'凝汽器',      x:1058, y:335, w:140, h:52, type:'steam',
+    desc:'表面式凝汽器将汽轮机低压缸排汽冷凝为液态水，在机组背压（约 4.5 kPa）下运行，为系统提供低压端冷源，有效提升机组循环效率。冷却水采用海水开式循环。',
+    params:[{k:'背压',v:'4.5 kPa'},{k:'冷却方式',v:'海水直流冷却'},{k:'热井温度',v:'约 32 ℃'}]},
+
+  { id:'feedpump',   label:'给水泵',      x:848, y:335, w:155, h:52, type:'steam',
+    desc:'将凝结水升压后经多级高低压加热器加热，最终作为高压给水送入省煤器/锅炉。包括汽动给水泵（主泵）和电动给水泵（备泵），通过回热系统提升机组效率。',
+    params:[{k:'额定流量',v:'1950 t/h'},{k:'出口压力',v:'31.5 MPa'},{k:'驱动方式',v:'汽动主泵+电备泵'}]},
+
+  // ── Flue gas treatment ──
+  { id:'economizer', label:'省煤器',      x:405, y:648, w:140, h:50, type:'fluegas',
+    desc:'利用锅炉尾部低温烟气（约 320-380 ℃）预热锅炉给水，将排烟温度降至约 140 ℃，降低排烟损失约 0.5 %。掺烧生物质时需关注低温腐蚀风险。',
+    params:[{k:'进/出水温',v:'282 / 305 ℃'},{k:'进/出烟温',v:'~380 / ~320 ℃'},{k:'提效',v:'约 0.5 %'}]},
+
+  { id:'airph',      label:'空气预热器',  x:232, y:648, w:145, h:50, type:'fluegas',
+    desc:'四分仓回转式空气预热器，利用约 140 ℃ 的尾部烟气将一次风和二次风预热至约 300-320 ℃，降低排烟温度至约 130 ℃，同时减少燃料着火热，提高燃烧稳定性。掺烧生物质时碱金属易造成受热面积灰堵塞，需加强吹灰。',
+    params:[{k:'型号',v:'四分仓回转式'},{k:'空气预热温度',v:'300-320 ℃'},{k:'排烟温度',v:'约 130 ℃'}]},
+
+  { id:'scr',  label:'SCR脱硝',    x:580, y:648, w:118, h:50, type:'env',
+    desc:'选择性催化还原（SCR）脱硝装置，以氨水为还原剂，将烟气中 NOₓ 还原为 N₂ 和 H₂O，脱硝效率 ≥ 85 %，出口 NOₓ ≤ 50 mg/Nm³，达到超低排放标准。',
+    params:[{k:'脱硝效率',v:'≥ 85 %'},{k:'出口NOₓ',v:'≤ 50 mg/Nm³'},{k:'还原剂',v:'氨水'}]},
+
+  { id:'esp',  label:'电除尘器',    x:726, y:648, w:118, h:50, type:'env',
+    desc:'三电场高效电除尘器，捕集烟气中飞灰，除尘效率 ≥ 99.9 %。掺烧生物质时飞灰中未燃碳含量变化，影响飞灰比电阻特性，需实时优化电场运行参数。',
+    params:[{k:'除尘效率',v:'≥ 99.9 %'},{k:'出口烟尘',v:'≤ 30 mg/Nm³'},{k:'电场数',v:'3 个'}]},
+
+  { id:'fgd',  label:'脱硫(FGD)',   x:872, y:648, w:128, h:50, type:'env',
+    desc:'石灰石-石膏湿法烟气脱硫（WFGD），脱硫效率 ≥ 99.5 %，出口 SO₂ ≤ 35 mg/Nm³，达到超低排放要求。掺烧生物质可减少 SO₂ 绝对排放量，有助于降低石灰石消耗。',
+    params:[{k:'脱硫效率',v:'≥ 99.5 %'},{k:'出口SO₂',v:'≤ 35 mg/Nm³'},{k:'副产品',v:'脱硫石膏'}]},
+
+  { id:'stack', label:'烟囱',        x:1030, y:645, w:100, h:58, type:'output',
+    desc:'净化后的烟气经 240 m 高烟囱高空扩散排放。在线 CEMS 系统持续监测 SO₂、NOₓ、烟尘、汞等污染物浓度，确保全时段达标排放，数据实时上传生态环境主管部门。',
+    params:[{k:'高度',v:'240 m'},{k:'监测项目',v:'SO₂/NOₓ/烟尘/汞'},{k:'数据上传',v:'实时联网'}]},
+];
+
+// ── Edge definitions ───────────────────────────────────────────────────────
+// type: 'fuel' | 'steam' | 'fluegas' | 'monitor' | 'control'
+// pts: optional array of {x,y} waypoints (logical coords) for routing
+const EDGES = [
+  // Fuel – coal
+  { from:'coal_yard', to:'coal_conv', type:'fuel' },
+  { from:'coal_conv', to:'coal_bin',  type:'fuel' },
+  { from:'coal_bin',  to:'mill',      type:'fuel' },
+  // Fuel – bio
+  { from:'bio_in',   to:'bio_proc',  type:'fuel' },
+  { from:'bio_proc', to:'bio_bin',   type:'fuel' },
+  { from:'bio_bin',  to:'mill',      type:'fuel' },
+  // Mill to boiler
+  { from:'mill', to:'boiler', type:'fuel' },
+  // Monitoring (boiler ↔ instruments)
+  { from:'boiler',    to:'bio_id',    type:'monitor' },
+  { from:'boiler',    to:'alkali',    type:'monitor' },
+  { from:'boiler',    to:'heat_flux', type:'monitor' },
+  { from:'soot',      to:'boiler',    type:'control' },
+  // Steam cycle
+  { from:'boiler',      to:'superheater', type:'steam',
+    pts:[{x:643,y:344},{x:790,y:344},{x:790,y:244},{x:848,y:244}] },
+  { from:'superheater', to:'turbine',     type:'steam' },
+  { from:'turbine',     to:'generator',   type:'steam' },
+  { from:'turbine',     to:'condenser',   type:'steam' },
+  { from:'condenser',   to:'feedpump',    type:'steam' },
+  // Feed water return to boiler (long U-route)
+  { from:'feedpump', to:'boiler', type:'steam',
+    pts:[{x:848,y:361},{x:760,y:361},{x:760,y:555},{x:643,y:555}] },
+  // Flue gas path (boiler → economizer, then right)
+  { from:'boiler',     to:'economizer', type:'fluegas',
+    pts:[{x:520,y:558},{x:520,y:610},{x:475,y:610},{x:475,y:648}] },
+  { from:'economizer', to:'airph',  type:'fluegas' },
+  { from:'airph',      to:'scr',    type:'fluegas',
+    pts:[{x:377,y:673},{x:377,y:720},{x:580,y:720},{x:580,y:698}] },
+  { from:'scr',  to:'esp',   type:'fluegas' },
+  { from:'esp',  to:'fgd',   type:'fluegas' },
+  { from:'fgd',  to:'stack', type:'fluegas' },
+];
+
+// ── Colour/style per edge type ─────────────────────────────────────────────
+const EDGE_STYLE = {
+  fuel    : { color:'#1e88e5', width:2.2, dash:[], arrow:true },
+  steam   : { color:'#00bcd4', width:2.2, dash:[], arrow:true },
+  fluegas : { color:'#78909c', width:1.8, dash:[6,4], arrow:true },
+  monitor : { color:'#ab47bc', width:1.5, dash:[4,4], arrow:true },
+  control : { color:'#ef6c00', width:1.5, dash:[4,4], arrow:true },
+};
+
+createApp({
+  setup() {
+    const cvRef  = ref(null);
+    const wrapRef = ref(null);
+    const tip = reactive({ show:false, label:'', x:0, y:0 });
+    const sel = ref(null);
+    let ctx, raf, W_px, H_px, scaleX, scaleY;
+    let particles = [];
+    let t = 0;
+
+    const legend = [
+      { label:'燃煤/生物质', color:'#1565c0' },
+      { label:'生物质系统',  color:'#2e7d32' },
+      { label:'锅炉/制粉',   color:'#b71c1c' },
+      { label:'监测控制',    color:'#6a1b9a' },
+      { label:'汽水/发电',   color:'#00695c' },
+      { label:'烟气/环保',   color:'#37474f' },
+    ];
+
+    function typeLabel(t){ return TYPE_NAMES[t] || t; }
+
+    // ── helpers ────────────────────────────────────────────────────────────
+    function cx(n){ return n.x + n.w/2; }
+    function cy(n){ return n.y + n.h/2; }
+
+    function nodeById(id){
+      return NODES.find(n=>n.id===id);
+    }
+
+    // build ordered point array for an edge
+    function edgePoints(e){
+      const a = nodeById(e.from), b = nodeById(e.to);
+      if(!a||!b) return [];
+      if(e.pts && e.pts.length) return e.pts;
+
+      // default: center-to-center
+      const ax = cx(a), ay = cy(a);
+      const bx = cx(b), by = cy(b);
+      // Exit/entry side: prefer closer side
+      const pts = [];
+      // exit from a
+      if(Math.abs(bx-ax) > Math.abs(by-ay)){
+        pts.push({ x: bx>ax ? a.x+a.w : a.x,  y: ay });
+        pts.push({ x: bx>ax ? b.x     : b.x+b.w, y: by });
+      } else {
+        pts.push({ x: ax, y: by>ay ? a.y+a.h : a.y });
+        pts.push({ x: bx, y: by>ay ? b.y     : b.y+b.h });
+      }
+      return pts;
+    }
+
+    // canvas-coordinate helpers
+    function lx(v){ return v * scaleX; }
+    function ly(v){ return v * scaleY; }
+
+    // ── draw arrow head ────────────────────────────────────────────────────
+    function arrowHead(x1,y1,x2,y2,color,sz){
+      const angle = Math.atan2(y2-y1, x2-x1);
+      ctx.save();
+      ctx.translate(x2,y2);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(-sz, -sz*0.5);
+      ctx.lineTo(-sz,  sz*0.5);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // ── draw a polyline edge ───────────────────────────────────────────────
+    function drawEdge(e, highlightId){
+      const pts = edgePoints(e);
+      if(pts.length < 2) return;
+      const style = EDGE_STYLE[e.type] || EDGE_STYLE.fuel;
+      const alpha = (highlightId && e.from!==highlightId && e.to!==highlightId) ? 0.3 : 1;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = style.color;
+      ctx.lineWidth   = lx(style.width);
+      ctx.setLineDash(style.dash.map(d=>lx(d)));
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(lx(pts[0].x), ly(pts[0].y));
+      for(let i=1;i<pts.length;i++) ctx.lineTo(lx(pts[i].x), ly(pts[i].y));
+      ctx.stroke();
+      // Arrow at last segment
+      if(style.arrow && pts.length>=2){
+        const p1 = pts[pts.length-2], p2 = pts[pts.length-1];
+        arrowHead(lx(p1.x),ly(p1.y), lx(p2.x),ly(p2.y), style.color, lx(ARROW_SIZE));
+      }
+      ctx.restore();
+    }
+
+    // ── draw a node box ────────────────────────────────────────────────────
+    function drawNode(n, isHov, isSel){
+      const x=lx(n.x), y=ly(n.y), w=lx(n.w), h=ly(n.h);
+      const col = TYPE_COLOR[n.type] || '#1a2a3a';
+
+      ctx.save();
+      // Drop shadow
+      ctx.shadowColor = isHov||isSel ? '#38a8f5' : col;
+      ctx.shadowBlur  = isHov||isSel ? 22 : 10;
+
+      // Fill
+      const grad = ctx.createLinearGradient(x,y,x,y+h);
+      grad.addColorStop(0, lighten(col, 0.18));
+      grad.addColorStop(1, col);
+      ctx.fillStyle = grad;
+      roundRect(ctx, x, y, w, h, lx(6));
+      ctx.fill();
+
+      // Border
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = isSel ? '#4fc3f7' : isHov ? '#38a8f5' : lighten(col, 0.35);
+      ctx.lineWidth = lx(isSel||isHov ? 2 : 1.2);
+      roundRect(ctx, x, y, w, h, lx(6));
+      ctx.stroke();
+
+      // Text
+      ctx.fillStyle = '#d8ecff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const lines = n.label.split('\n');
+      if(lines.length===1){
+        ctx.font = `${lx(12.5)}px 'Microsoft YaHei', Arial, sans-serif`;
+        ctx.fillText(lines[0], x+w/2, y+h/2);
+      } else {
+        ctx.font = `bold ${lx(12)}px 'Microsoft YaHei', Arial, sans-serif`;
+        ctx.fillText(lines[0], x+w/2, y+h/2 - lx(8));
+        ctx.font = `${lx(10.5)}px 'Microsoft YaHei', Arial, sans-serif`;
+        ctx.fillStyle = '#b0d4f0';
+        ctx.fillText(lines[1], x+w/2, y+h/2 + lx(9));
+      }
+      ctx.restore();
+    }
+
+    // ── section labels ─────────────────────────────────────────────────────
+    function drawSectionLabel(text, x, y, color){
+      ctx.save();
+      ctx.font = `${lx(10)}px 'Microsoft YaHei', Arial, sans-serif`;
+      ctx.fillStyle = color || '#3a6090';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, lx(x), ly(y));
+      ctx.restore();
+    }
+
+    // ── animated particles ─────────────────────────────────────────────────
+    function initParticles(){
+      particles = [];
+      EDGES.forEach((e,ei) => {
+        const pts = edgePoints(e);
+        if(pts.length < 2) return;
+        const style = EDGE_STYLE[e.type] || EDGE_STYLE.fuel;
+        // compute total length
+        let len = 0;
+        for(let i=1;i<pts.length;i++){
+          len += Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+        }
+        // number of particles proportional to length
+        const count = Math.max(1, Math.floor(len/PARTICLE_SPACING));
+        for(let i=0;i<count;i++){
+          particles.push({
+            edgeIdx: ei,
+            pts,
+            progress: i/count,
+            speed: BASE_PARTICLE_SPEED + Math.random()*SPEED_VARIANCE,
+            color: style.color,
+            r: MIN_PARTICLE_RADIUS + Math.random()*RADIUS_VARIANCE,
+          });
+        }
+      });
+    }
+
+    function updateParticles(){
+      particles.forEach(p=>{
+        p.progress += p.speed;
+        if(p.progress >= 1) p.progress -= 1;
+      });
+    }
+
+    function getParticlePos(p){
+      const pts = p.pts;
+      // compute lengths
+      const segs = [];
+      let total = 0;
+      for(let i=1;i<pts.length;i++){
+        const d = Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+        segs.push(d);
+        total += d;
+      }
+      let dist = p.progress * total;
+      for(let i=0;i<segs.length;i++){
+        if(dist <= segs[i]){
+          const t = dist/segs[i];
+          return {
+            x: pts[i].x + t*(pts[i+1].x-pts[i].x),
+            y: pts[i].y + t*(pts[i+1].y-pts[i].y),
+          };
+        }
+        dist -= segs[i];
+      }
+      return pts[pts.length-1];
+    }
+
+    function drawParticles(highlightId){
+      particles.forEach(p=>{
+        const e = EDGES[p.edgeIdx];
+        if(highlightId && e.from!==highlightId && e.to!==highlightId) return;
+        const pos = getParticlePos(p);
+        ctx.save();
+        ctx.globalAlpha = highlightId ? 1 : 0.75;
+        ctx.beginPath();
+        ctx.arc(lx(pos.x), ly(pos.y), lx(p.r), 0, Math.PI*2);
+        // glow
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = lx(8);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    // ── main draw loop ─────────────────────────────────────────────────────
+    function draw(){
+      if(!ctx) return;
+      ctx.clearRect(0, 0, W_px, H_px);
+
+      // Background
+      ctx.fillStyle = '#060e1e';
+      ctx.fillRect(0,0,W_px,H_px);
+
+      // Background grid
+      drawGrid();
+
+      // Section labels
+      drawSectionLabel('▌ 燃料供给系统', 38, 22, '#1565c0');
+      drawSectionLabel('▌ 锅炉燃烧系统', 408, 272, '#b71c1c');
+      drawSectionLabel('▌ 监测控制系统', 678, 272, '#6a1b9a');
+      drawSectionLabel('▌ 汽轮发电系统', 848, 80, '#00695c');
+      drawSectionLabel('▌ 烟气净化系统', 228, 622, '#37474f');
+
+      const hovId = tip.nodeId || null;
+      const selId = sel.value ? sel.value.id : null;
+      const hlId  = selId || hovId;
+
+      // Edges
+      EDGES.forEach(e => drawEdge(e, hlId));
+
+      // Particles
+      updateParticles();
+      drawParticles(hlId);
+
+      // Nodes
+      NODES.forEach(n => drawNode(n, n.id===hovId, n.id===selId));
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    function drawGrid(){
+      const step = lx(GRID_STEP);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(30,60,100,0.18)';
+      ctx.lineWidth = 0.5;
+      for(let x=0;x<W_px;x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H_px); ctx.stroke(); }
+      for(let y=0;y<H_px;y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W_px,y); ctx.stroke(); }
+      ctx.restore();
+    }
+
+    // ── hit test ───────────────────────────────────────────────────────────
+    function hitNode(px, py){
+      for(let i=NODES.length-1;i>=0;i--){
+        const n = NODES[i];
+        const nx=lx(n.x), ny=ly(n.y), nw=lx(n.w), nh=ly(n.h);
+        if(px>=nx && px<=nx+nw && py>=ny && py<=ny+nh) return n;
+      }
+      return null;
+    }
+
+    // ── event handlers ─────────────────────────────────────────────────────
+    function canvasXY(e){
+      const rect = cvRef.value.getBoundingClientRect();
+      return { x: e.clientX-rect.left, y: e.clientY-rect.top };
+    }
+
+    function onMove(e){
+      const {x,y} = canvasXY(e);
+      const n = hitNode(x,y);
+      if(n){
+        tip.show = true;
+        tip.label = n.label.replace(/\n/g,' ');
+        tip.x = x + 12;
+        tip.y = y - 14;
+        tip.nodeId = n.id;
+        cvRef.value.style.cursor = 'pointer';
+      } else {
+        tip.show = false;
+        tip.nodeId = null;
+        cvRef.value.style.cursor = 'default';
+      }
+    }
+
+    function onClick(e){
+      const {x,y} = canvasXY(e);
+      const n = hitNode(x,y);
+      sel.value = n || null;
+    }
+
+    function onLeave(){
+      tip.show = false;
+      tip.nodeId = null;
+    }
+
+    // ── resize ─────────────────────────────────────────────────────────────
+    function resize(){
+      const wrap = wrapRef.value;
+      W_px = wrap.clientWidth;
+      H_px = wrap.clientHeight;
+      scaleX = W_px / LW;
+      scaleY = H_px / LH;
+      cvRef.value.width  = W_px;
+      cvRef.value.height = H_px;
+    }
+
+    onMounted(()=>{
+      ctx = cvRef.value.getContext('2d');
+      resize();
+      initParticles();
+      draw();
+      window.addEventListener('resize', ()=>{ resize(); initParticles(); });
+    });
+
+    onUnmounted(()=>{
+      if(raf) cancelAnimationFrame(raf);
+    });
+
+    return { cvRef, wrapRef, tip, sel, legend, typeLabel, onMove, onClick, onLeave };
+  }
+}).mount('#app');
+
+// ── Utility helpers (global scope) ────────────────────────────────────────
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function lighten(hex, amt){
+  let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,Math.round(r+255*amt));
+  g=Math.min(255,Math.round(g+255*amt));
+  b=Math.min(255,Math.round(b+255*amt));
+  return '#'+r.toString(16).padStart(2,'0')+g.toString(16).padStart(2,'0')+b.toString(16).padStart(2,'0');
+}
+</script>
+</body>
+</html>
